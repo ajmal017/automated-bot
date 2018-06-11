@@ -1,0 +1,9 @@
+build/
+dist/
+media/
+*.egg-info/
+*.egg
+*.py[cod]
+__pycache__/
+*.idea/
+*.sqlite3
