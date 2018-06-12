@@ -1,5 +1,5 @@
 {
-  "site_url": "http://127.0.0.1:8000/api/",
+  "site_url": "http://127.0.0.1:{}/api/",
   "register_url": "register/",
   "api_token_url": "token/",
   "list_of_users_url": "user-list/",

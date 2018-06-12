@@ -1,8 +1,9 @@
-import string
 import requests
 import json
 import random
 import time
+
+from utils import generate_valid_email
 
 with open('config.json') as f:
     rules = json.load(f)
@@ -10,9 +11,12 @@ with open('config.json') as f:
 with open('utils_and_user_info.json') as f:
     info = json.load(f)
 
+choose_port = input('Please enter the port number you are running your app on(can be left blank if you are running it '
+                    'on default port of 8000:\n')
+
 TEST_USER_NAME = info['test_user_name']
 GENERIC_PASSWORD = info['generic_password']
-SITE_URL = info['site_url']
+SITE_URL = info['site_url'].format(choose_port if choose_port.isdigit() else 8000)
 REGISTER = info['register_url']
 API_TOKEN = info['api_token_url']
 LIST_OF_USERS = info['list_of_users_url']
@@ -21,11 +25,11 @@ POST_CREATION = info['post_creation_url']
 
 
 def populate_users_and_create_posts():
+    print('Populating users list and verifying email, this may take a while due to a server 2 '
+          'second sleep timer between email checks\n')
     for _ in range(0, rules['number_of_users']):
-        chars = string.ascii_lowercase
-        random_string = ''.join(random.choice(chars) for _ in range(15))
         current_time = time.time()
-        valid_email = f'urosh43+{random_string}@gmail.com'
+        valid_email = generate_valid_email()
         username = f'{TEST_USER_NAME}-{current_time}'
         requests.post(SITE_URL + REGISTER,
                       json={'username': username, 'email': valid_email, 'password': GENERIC_PASSWORD})
@@ -34,11 +38,13 @@ def populate_users_and_create_posts():
         token = get_all_posts.json()['access']
         headers = {'Authorization': f'Bearer {token}', 'Connection': 'close'}
         data = {'title': 'Bot posting', 'body': 'Test me please', 'status': 'published'}
+        print('Creating posts for generated user\n')
         for _ in range(0, random.randint(1, rules['max_posts_per_user'])):
             requests.post(SITE_URL + POST_CREATION, json=data, headers=headers)
 
 
 def perform_like_activity():
+    print('Liking post by logic given in specification\n')
     while True:
         current_max_number_of_posts = 0
         user = ''
@@ -72,7 +78,10 @@ def perform_like_activity():
         while user[2] < rules['max_likes_per_user'] and list_of_posts_from_other_users_2:
             for each_post in list_of_posts_from_other_users:
                     all_posible = list(set(each_post['author']['blog_posts']).difference(user[4]))
-                    random_chosen = random.choice(all_posible)
+                    try:
+                        random_chosen = random.choice(all_posible)
+                    except IndexError:
+                        break
                     if random_chosen == each_post['id']:
                         list_of_posts_from_other_users_2.remove(each_post)
                     requests.get(SITE_URL+LIST_OF_POSTS+f'{random_chosen}/like/', headers=headers)
