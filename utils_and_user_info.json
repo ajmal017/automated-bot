@@ -1,0 +1,10 @@
+{
+  "site_url": "http://127.0.0.1:8000/api/",
+  "register_url": "register/",
+  "api_token_url": "token/",
+  "list_of_users_url": "user-list/",
+  "list_of_posts_url": "post-list/",
+  "post_creation_url": "post-list/create/",
+  "test_user_name" : "Test",
+  "generic_password" : "passmeup123"
+}
