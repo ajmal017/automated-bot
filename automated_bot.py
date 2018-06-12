@@ -33,10 +33,9 @@ def populate_users_and_create_posts():
         username = f'{TEST_USER_NAME}-{current_time}'
         requests.post(SITE_URL + REGISTER,
                       json={'username': username, 'email': valid_email, 'password': GENERIC_PASSWORD})
-        get_all_posts = requests.post(SITE_URL + API_TOKEN, data={'username': username, 'password': GENERIC_PASSWORD},
-                                      headers={'Connection': 'close'})
+        get_all_posts = requests.post(SITE_URL + API_TOKEN, data={'username': username, 'password': GENERIC_PASSWORD})
         token = get_all_posts.json()['access']
-        headers = {'Authorization': f'Bearer {token}', 'Connection': 'close'}
+        headers = {'Authorization': f'Bearer {token}'}
         data = {'title': 'Bot posting', 'body': 'Test me please', 'status': 'published'}
         print('Creating posts for generated user\n')
         for _ in range(0, random.randint(1, rules['max_posts_per_user'])):
@@ -48,7 +47,7 @@ def perform_like_activity():
     while True:
         current_max_number_of_posts = 0
         user = ''
-        get_all_users = requests.get(SITE_URL + LIST_OF_USERS, headers={'Connection': 'close'})
+        get_all_users = requests.get(SITE_URL + LIST_OF_USERS)
         for each_user in get_all_users.json():
             number_of_posts = len(each_user['blog_posts'])
             number_of_likes = len(each_user['posts_liked'])
@@ -61,32 +60,33 @@ def perform_like_activity():
         if user == '':
             break
         get_token_for_user_with_max_number_of_posts = requests.post(SITE_URL + API_TOKEN, data={'username': user[0],
-                                                                                                'password': user[1]},
-                                                                    headers={'Connection': 'close'})
+                                                                                                'password': user[1]})
         token = get_token_for_user_with_max_number_of_posts.json()['access']
-        headers = {'Authorization': f'Bearer {token}', 'Connection': 'close'}
-        get_all_posts = requests.get(SITE_URL+LIST_OF_POSTS, headers={'Connection': 'close'})
-        list_of_posts_from_other_users = []
+        headers = {'Authorization': f'Bearer {token}'}
+        get_all_posts = requests.get(SITE_URL+LIST_OF_POSTS)
+        list_of_posts_without_likes_and_from_other_users = []
         for post in get_all_posts.json():
             if post['author']['username'] != user[0] and len(post['users_like']) == 0:
-                list_of_posts_from_other_users.append(post)
-        if not list_of_posts_from_other_users:
+                list_of_posts_without_likes_and_from_other_users.append(post)
+        if not list_of_posts_without_likes_and_from_other_users:
             if get_all_posts.json():
                 break
-        list_of_posts_from_other_users_2 = list_of_posts_from_other_users[:]
+        temporary_list = list_of_posts_without_likes_and_from_other_users[:]
 
-        while user[2] < rules['max_likes_per_user'] and list_of_posts_from_other_users_2:
-            for each_post in list_of_posts_from_other_users:
-                    all_posible = list(set(each_post['author']['blog_posts']).difference(user[4]))
+        finished = False
+        while user[2] < rules['max_likes_per_user'] and temporary_list and not finished:
+            for each_post in list_of_posts_without_likes_and_from_other_users:
+                    all_valid_posts_for_liking = list(set(each_post['author']['blog_posts']).difference(user[4]))
                     try:
-                        random_chosen = random.choice(all_posible)
+                        random_post_chosen = random.choice(all_valid_posts_for_liking)
                     except IndexError:
+                        finished = True
                         break
-                    if random_chosen == each_post['id']:
-                        list_of_posts_from_other_users_2.remove(each_post)
-                    requests.get(SITE_URL+LIST_OF_POSTS+f'{random_chosen}/like/', headers=headers)
+                    if random_post_chosen == each_post['id']:
+                        temporary_list.remove(each_post)
+                    requests.get(SITE_URL+LIST_OF_POSTS+f'{random_post_chosen}/like/', headers=headers)
                     user[2] += 1
-                    user[4].append(random_chosen)
+                    user[4].append(random_post_chosen)
                     if user[2] == rules['max_likes_per_user']:
                         break
 
