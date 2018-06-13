@@ -43,7 +43,7 @@ def populate_users_and_create_posts():
 
 
 def perform_like_activity():
-    print('Liking post by logic given in specification\n')
+    print('Liking posts by logic given in specification\n')
     while True:
         current_max_number_of_posts = 0
         user = ''
