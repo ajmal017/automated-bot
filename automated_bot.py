@@ -17,11 +17,9 @@ choose_port = input('Please enter the port number you are running your app on(ca
 TEST_USER_NAME = info['test_user_name']
 GENERIC_PASSWORD = info['generic_password']
 SITE_URL = info['site_url'].format(choose_port if choose_port.isdigit() else 8000)
-REGISTER = info['register_url']
 API_TOKEN = info['api_token_url']
 LIST_OF_USERS = info['list_of_users_url']
 LIST_OF_POSTS = info['list_of_posts_url']
-POST_CREATION = info['post_creation_url']
 
 
 def populate_users_and_create_posts():
@@ -31,7 +29,7 @@ def populate_users_and_create_posts():
         current_time = time.time()
         valid_email = generate_valid_email()
         username = f'{TEST_USER_NAME}-{current_time}'
-        requests.post(SITE_URL + REGISTER,
+        requests.post(SITE_URL + LIST_OF_USERS,
                       json={'username': username, 'email': valid_email, 'password': GENERIC_PASSWORD})
         get_all_posts = requests.post(SITE_URL + API_TOKEN, data={'username': username, 'password': GENERIC_PASSWORD})
         token = get_all_posts.json()['access']
@@ -39,7 +37,7 @@ def populate_users_and_create_posts():
         data = {'title': 'Bot posting', 'body': 'Test me please', 'status': 'published'}
         print('Creating posts for generated user\n')
         for _ in range(0, random.randint(1, rules['max_posts_per_user'])):
-            requests.post(SITE_URL + POST_CREATION, json=data, headers=headers)
+            requests.post(SITE_URL + LIST_OF_POSTS, json=data, headers=headers)
 
 
 def perform_like_activity():
@@ -66,7 +64,7 @@ def perform_like_activity():
         get_all_posts = requests.get(SITE_URL+LIST_OF_POSTS)
         list_of_posts_without_likes_and_from_other_users = []
         for post in get_all_posts.json():
-            if post['author']['username'] != user[0] and len(post['users_like']) == 0:
+            if post['author'] != user[3] and len(post['users_like']) == 0:
                 list_of_posts_without_likes_and_from_other_users.append(post)
         if not list_of_posts_without_likes_and_from_other_users:
             if get_all_posts.json():
@@ -76,7 +74,8 @@ def perform_like_activity():
         finished = False
         while user[2] < rules['max_likes_per_user'] and temporary_list and not finished:
             for each_post in list_of_posts_without_likes_and_from_other_users:
-                    all_valid_posts_for_liking = list(set(each_post['author']['blog_posts']).difference(user[4]))
+                    get_user = requests.get(SITE_URL + LIST_OF_USERS + str(each_post['author']))
+                    all_valid_posts_for_liking = list(set(get_user.json()['blog_posts']).difference(user[4]))
                     try:
                         random_post_chosen = random.choice(all_valid_posts_for_liking)
                     except IndexError:
